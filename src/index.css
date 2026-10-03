@@ -1,0 +1,61 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@media print {
+  /* 1. Hide Global Layout UI (Navbar, Footer, Modals) */
+  header.sticky, 
+  nav, 
+  footer, 
+  [role="dialog"], 
+  .fixed {
+    display: none !important;
+  }
+
+  /* 2. Hide Interactive Controls & Comments */
+  button, 
+  [role="button"], 
+  form,
+  #comments-section,
+  .print-hidden {
+    display: none !important;
+  }
+
+  /* 3. Reset Body & Core Wrappers for Paper */
+  body, html, #root {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
+
+  /* 4. Strip Backgrounds and Force Black Text for Ink Saving */
+  * {
+    background: transparent !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    color: #000000 !important;
+  }
+
+  /* 5. Typography and Links */
+  a {
+    text-decoration: underline !important;
+  }
+
+  /* 6. Page Break Management */
+  h1, h2, h3 {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+
+  img, svg, figure, pre, blockquote {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    max-width: 100% !important;
+  }
+
+  p, h2, h3 {
+    orphans: 3;
+    widows: 3;
+  }
+}

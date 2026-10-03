@@ -1,0 +1,6 @@
+{
+  "name": "EduAI",
+  "description": "A modern editorial technology and artificial intelligence publication covering AI engineering, agents, machine learning, web development, and tech industry news.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

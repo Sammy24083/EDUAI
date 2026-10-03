@@ -1,0 +1,199 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Bootstrapped admin & persistent admin collection
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'amaechisamuelugo@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isEditor() {
+      return isAdmin() || (
+        isSignedIn() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'editor']
+      );
+    }
+
+    function isAuthor() {
+      return isAdmin() || isEditor() || (
+        isSignedIn() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'editor', 'author']
+      );
+    }
+
+    function isValidUser(data) {
+      return data.uid is string && data.uid.size() <= 128 &&
+        data.displayName is string && data.displayName.size() <= 100 &&
+        data.email is string && data.email.size() <= 256 &&
+        data.role in ['user', 'author', 'editor', 'admin'] &&
+        (!('username' in data) || (data.username is string && data.username.size() <= 60)) &&
+        (!('bio' in data) || (data.bio is string && data.bio.size() <= 500)) &&
+        (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 1024)) &&
+        (!('website' in data) || (data.website is string && data.website.size() <= 500)) &&
+        (!('twitter' in data) || (data.twitter is string && data.twitter.size() <= 100)) &&
+        (!('github' in data) || (data.github is string && data.github.size() <= 100)) &&
+        (!('linkedin' in data) || (data.linkedin is string && data.linkedin.size() <= 100));
+    }
+
+    function isValidArticle(data) {
+      return data.title is string && data.title.size() > 0 && data.title.size() <= 250 &&
+        data.slug is string && data.slug.size() > 0 && data.slug.size() <= 150 &&
+        data.content is string && data.content.size() <= 200000 &&
+        data.authorId is string && data.authorId.size() <= 128 &&
+        data.status in ['draft', 'published', 'scheduled'] &&
+        (!('tags' in data) || (data.tags is list && data.tags.size() <= 10));
+    }
+
+    function isValidComment(data) {
+      return data.articleId is string && data.articleId.size() <= 128 &&
+        data.userId is string && data.userId.size() <= 128 &&
+        data.userName is string && data.userName.size() <= 100 &&
+        data.content is string && data.content.size() > 0 && data.content.size() <= 2000;
+    }
+
+    function isValidSubscriber(data) {
+      return data.email is string && data.email.size() > 3 && data.email.size() <= 256 &&
+        data.status in ['active', 'unsubscribed'];
+    }
+
+    // Collection: Users
+    match /users/{userId} {
+      allow get: if true;
+      allow list: if isAdmin();
+      allow create: if isSignedIn() && request.auth.uid == userId && isValidUser(incoming()) && (incoming().role in ['user', 'author'] || isAdmin());
+      allow update: if isSignedIn() && ((request.auth.uid == userId && isValidUser(incoming()) && (incoming().role == existing().role || incoming().role == 'author')) || isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    // Collection: Admins
+    match /admins/{userId} {
+      allow read, write: if isAdmin();
+    }
+
+    // Collection: Articles
+    match /articles/{articleId} {
+      allow get: if existing().status == 'published' || (isSignedIn() && (existing().authorId == request.auth.uid || isEditor()));
+      allow list: if true;
+      allow create: if isSignedIn() && isValidArticle(incoming()) && (isAdmin() || incoming().authorId == request.auth.uid);
+      allow update: if (
+        // Public action: View count increment
+        incoming().diff(existing()).affectedKeys().hasOnly(['views']) ||
+        (isSignedIn() && (
+          isAdmin() ||
+          isEditor() ||
+          (existing().authorId == request.auth.uid && isValidArticle(incoming()) && incoming().authorId == existing().authorId) ||
+          incoming().diff(existing()).affectedKeys().hasOnly(['likesCount']) ||
+          incoming().diff(existing()).affectedKeys().hasOnly(['savesCount']) ||
+          incoming().diff(existing()).affectedKeys().hasOnly(['commentsCount']) ||
+          incoming().diff(existing()).affectedKeys().hasOnly(['completionsCount']) ||
+          incoming().diff(existing()).affectedKeys().hasOnly(['ratingsCount', 'averageRating']) ||
+          incoming().diff(existing()).affectedKeys().hasOnly(['completionsCount', 'ratingsCount', 'averageRating'])
+        ))
+      );
+      allow delete: if isSignedIn() && (existing().authorId == request.auth.uid || isEditor() || isAdmin());
+    }
+
+    // Collection: Categories
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if isAdmin() || isEditor();
+    }
+
+    // Collection: Tags
+    match /tags/{tagId} {
+      allow read: if true;
+      allow write: if isAdmin() || isEditor();
+    }
+
+    // Collection: Comments
+    match /comments/{commentId} {
+      allow read: if existing().status == 'approved' || (isSignedIn() && (existing().userId == request.auth.uid || isEditor()));
+      allow create: if isSignedIn() && isValidComment(incoming()) && (isAdmin() || incoming().userId == request.auth.uid);
+      allow update: if isSignedIn() && (
+        (existing().userId == request.auth.uid && isValidComment(incoming()) && incoming().userId == existing().userId) ||
+        isEditor() ||
+        (incoming().diff(existing()).affectedKeys().hasOnly(['likesCount']))
+      );
+      allow delete: if isSignedIn() && (existing().userId == request.auth.uid || isEditor());
+    }
+
+    // Collection: Likes
+    match /likes/{likeId} {
+      allow read: if true;
+      allow create: if isSignedIn() && incoming().userId == request.auth.uid;
+      allow delete: if isSignedIn() && existing().userId == request.auth.uid;
+    }
+
+    // Collection: Completions
+    match /completions/{compId} {
+      allow read: if true;
+      allow create: if isSignedIn() && incoming().userId == request.auth.uid;
+    }
+
+    // Collection: Ratings
+    match /ratings/{ratingId} {
+      allow read: if true;
+      allow create: if isSignedIn() && incoming().userId == request.auth.uid;
+    }
+
+    // Collection: Saves
+    match /saves/{saveId} {
+      allow get: if isSignedIn() && existing().userId == request.auth.uid;
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && incoming().userId == request.auth.uid;
+      allow delete: if isSignedIn() && existing().userId == request.auth.uid;
+    }
+
+    // Collection: Reading Lists
+    match /readingLists/{listId} {
+      allow read: if isSignedIn() && (existing().userId == request.auth.uid || !existing().isPrivate);
+      allow create: if isSignedIn() && incoming().userId == request.auth.uid;
+      allow update, delete: if isSignedIn() && existing().userId == request.auth.uid;
+    }
+
+    // Collection: Newsletter Subscribers
+    match /newsletterSubscribers/{subscriberId} {
+      allow create: if isValidSubscriber(incoming());
+      allow read, update, delete: if isAdmin() || isEditor();
+    }
+
+    // Collection: Advertisements
+    match /advertisements/{adId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Collection: Site Settings
+    match /siteSettings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+  }
+}

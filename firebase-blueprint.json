@@ -1,0 +1,240 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile with role-based access control and author details",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "format": "email", "maxLength": 256 },
+        "displayName": { "type": "string", "maxLength": 100 },
+        "username": { "type": "string", "maxLength": 50, "pattern": "^[a-zA-Z0-9_-]+$" },
+        "photoURL": { "type": "string", "maxLength": 1024 },
+        "bio": { "type": "string", "maxLength": 500 },
+        "role": { "type": "string", "enum": ["user", "author", "editor", "admin"] },
+        "website": { "type": "string", "maxLength": 256 },
+        "twitter": { "type": "string", "maxLength": 100 },
+        "github": { "type": "string", "maxLength": 100 },
+        "linkedin": { "type": "string", "maxLength": 100 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "displayName", "role", "createdAt"]
+    },
+    "Admin": {
+      "title": "Admin",
+      "description": "Trusted administrative access map",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "format": "email", "maxLength": 256 },
+        "role": { "type": "string", "enum": ["admin", "editor"] },
+        "addedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["email", "role"]
+    },
+    "Article": {
+      "title": "Article",
+      "description": "Editorial article content, SEO metadata, metrics and publication state",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "maxLength": 250 },
+        "subtitle": { "type": "string", "maxLength": 400 },
+        "slug": { "type": "string", "maxLength": 150, "pattern": "^[a-zA-Z0-9_-]+$" },
+        "featuredImage": { "type": "string", "maxLength": 2048 },
+        "content": { "type": "string", "maxLength": 200000 },
+        "authorId": { "type": "string", "maxLength": 128 },
+        "authorName": { "type": "string", "maxLength": 100 },
+        "authorUsername": { "type": "string", "maxLength": 50 },
+        "authorPhotoURL": { "type": "string", "maxLength": 1024 },
+        "categoryId": { "type": "string", "maxLength": 100 },
+        "categoryName": { "type": "string", "maxLength": 100 },
+        "categorySlug": { "type": "string", "maxLength": 100 },
+        "tags": { "type": "array", "description": "Tags list up to 10 items" },
+        "status": { "type": "string", "enum": ["draft", "published", "scheduled"] },
+        "publishedAt": { "type": "string", "format": "date-time" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "readingTime": { "type": "string", "maxLength": 50 },
+        "views": { "type": "number" },
+        "likesCount": { "type": "number" },
+        "savesCount": { "type": "number" },
+        "commentsCount": { "type": "number" },
+        "seoTitle": { "type": "string", "maxLength": 150 },
+        "seoDescription": { "type": "string", "maxLength": 300 },
+        "canonicalUrl": { "type": "string", "maxLength": 1024 },
+        "isFeatured": { "type": "boolean" },
+        "isTrending": { "type": "boolean" },
+        "isSponsored": { "type": "boolean" },
+        "sponsoredBrand": { "type": "string", "maxLength": 100 },
+        "sponsoredUrl": { "type": "string", "maxLength": 1024 },
+        "isPremium": { "type": "boolean" }
+      },
+      "required": ["title", "slug", "content", "authorId", "status", "createdAt"]
+    },
+    "Category": {
+      "title": "Category",
+      "description": "Publication topics and taxonomy",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "maxLength": 100 },
+        "slug": { "type": "string", "maxLength": 100, "pattern": "^[a-zA-Z0-9_-]+$" },
+        "description": { "type": "string", "maxLength": 500 },
+        "image": { "type": "string", "maxLength": 1024 },
+        "color": { "type": "string", "maxLength": 30 },
+        "articleCount": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "slug", "description"]
+    },
+    "Tag": {
+      "title": "Tag",
+      "description": "Granular article indexing tags",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "maxLength": 50 },
+        "slug": { "type": "string", "maxLength": 50, "pattern": "^[a-zA-Z0-9_-]+$" },
+        "description": { "type": "string", "maxLength": 300 },
+        "articleCount": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "slug"]
+    },
+    "Comment": {
+      "title": "Comment",
+      "description": "Reader discussion on published articles",
+      "type": "object",
+      "properties": {
+        "articleId": { "type": "string", "maxLength": 128 },
+        "articleSlug": { "type": "string", "maxLength": 150 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "userName": { "type": "string", "maxLength": 100 },
+        "userAvatar": { "type": "string", "maxLength": 1024 },
+        "content": { "type": "string", "maxLength": 2000 },
+        "status": { "type": "string", "enum": ["approved", "pending", "flagged", "hidden"] },
+        "likesCount": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["articleId", "userId", "userName", "content", "createdAt"]
+    },
+    "Like": {
+      "title": "Like",
+      "description": "User article appreciation record",
+      "type": "object",
+      "properties": {
+        "articleId": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["articleId", "userId", "createdAt"]
+    },
+    "Save": {
+      "title": "Save",
+      "description": "User bookmarked article record",
+      "type": "object",
+      "properties": {
+        "articleId": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "articleTitle": { "type": "string", "maxLength": 250 },
+        "articleSlug": { "type": "string", "maxLength": 150 },
+        "articleImage": { "type": "string", "maxLength": 1024 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["articleId", "userId", "articleTitle", "articleSlug", "createdAt"]
+    },
+    "NewsletterSubscriber": {
+      "title": "NewsletterSubscriber",
+      "description": "SAMM AI email newsletter subscriber",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "format": "email", "maxLength": 256 },
+        "status": { "type": "string", "enum": ["active", "unsubscribed"] },
+        "source": { "type": "string", "maxLength": 100 },
+        "subscribedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["email", "status", "subscribedAt"]
+    },
+    "Advertisement": {
+      "title": "Advertisement",
+      "description": "Monetization advertisement campaign banner or sponsorship",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "maxLength": 150 },
+        "imageUrl": { "type": "string", "maxLength": 1024 },
+        "destinationUrl": { "type": "string", "maxLength": 1024 },
+        "placement": { "type": "string", "enum": ["home_banner", "article_top", "article_incontent", "sidebar", "footer"] },
+        "active": { "type": "boolean" },
+        "startDate": { "type": "string", "format": "date-time" },
+        "endDate": { "type": "string", "format": "date-time" },
+        "impressions": { "type": "number" },
+        "clicks": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "destinationUrl", "placement", "active"]
+    },
+    "SiteSetting": {
+      "title": "SiteSetting",
+      "description": "Global publication configuration and SEO settings",
+      "type": "object",
+      "properties": {
+        "siteName": { "type": "string", "maxLength": 100 },
+        "tagline": { "type": "string", "maxLength": 250 },
+        "description": { "type": "string", "maxLength": 500 },
+        "contactEmail": { "type": "string", "format": "email", "maxLength": 256 },
+        "twitterHandle": { "type": "string", "maxLength": 100 },
+        "githubUrl": { "type": "string", "maxLength": 256 },
+        "linkedinUrl": { "type": "string", "maxLength": 256 },
+        "maintenanceMode": { "type": "boolean" },
+        "allowComments": { "type": "boolean" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["siteName"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles with role permissions"
+    },
+    "/admins/{userId}": {
+      "schema": "Admin",
+      "description": "List of administrative user accounts"
+    },
+    "/articles/{articleId}": {
+      "schema": "Article",
+      "description": "Articles published or drafted on SAMM AI"
+    },
+    "/categories/{categoryId}": {
+      "schema": "Category",
+      "description": "Content taxonomy categories"
+    },
+    "/tags/{tagId}": {
+      "schema": "Tag",
+      "description": "Granular classification tags"
+    },
+    "/comments/{commentId}": {
+      "schema": "Comment",
+      "description": "Reader comments on articles"
+    },
+    "/likes/{likeId}": {
+      "schema": "Like",
+      "description": "Article appreciation records"
+    },
+    "/saves/{saveId}": {
+      "schema": "Save",
+      "description": "User reading list and bookmarks"
+    },
+    "/newsletterSubscribers/{subscriberId}": {
+      "schema": "NewsletterSubscriber",
+      "description": "Newsletter email subscriptions"
+    },
+    "/advertisements/{adId}": {
+      "schema": "Advertisement",
+      "description": "Configurable advertising campaigns"
+    },
+    "/siteSettings/{settingId}": {
+      "schema": "SiteSetting",
+      "description": "Global website settings and metadata"
+    }
+  }
+}

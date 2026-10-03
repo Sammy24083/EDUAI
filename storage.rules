@@ -1,0 +1,34 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Default deny: Block all unauthenticated or unmatched access
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+
+    // User profile avatars
+    // Public read so avatars can be displayed next to authors and comments
+    // Authenticated write strictly restricted to the avatar owner with max size 5MB and image MIME type
+    match /avatars/{userId}/{fileName} {
+      allow read: if true;
+      allow write: if request.auth != null
+                   && request.auth.uid == userId
+                   && request.resource.size < 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+      allow delete: if request.auth != null
+                    && (request.auth.uid == userId || request.auth.token.email == 'amaechisamuelugo@gmail.com');
+    }
+
+    // Article featured images and media uploads
+    // Public read for editorial display
+    // Write restricted to authenticated editorial contributors with max size 10MB and image MIME type
+    match /articles/{articleId}/{fileName} {
+      allow read: if true;
+      allow write: if request.auth != null
+                   && request.resource.size < 10 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+      allow delete: if request.auth != null
+                    && (request.auth.token.email == 'amaechisamuelugo@gmail.com');
+    }
+  }
+}
